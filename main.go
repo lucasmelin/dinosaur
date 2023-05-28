@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"log"
 	"math/rand"
 	"net"
@@ -27,6 +28,18 @@ type DNSQuestion struct {
 	name  string
 	Type  int
 	Class int
+}
+
+type DNSRecord struct {
+	// name represents the domain name.
+	name []byte
+	// A record type such as A, AAAA, MX, NS, TXT, etc.
+	Type  int
+	Class int
+	// ttl represents the time-to-live of the cache entry for the query.
+	ttl int
+	// data contains the records content, such as the IP address.
+	data []byte
 }
 
 // toBytes encodes a DNSHeader as bytes.
@@ -98,12 +111,43 @@ func sendQuery(domain string) {
 	}
 	defer con.Close()
 
-	con.Write(query)
+	_, _ = con.Write(query)
 	response := make([]byte, 1024)
 	_, err = con.Read(response)
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("%q", response)
+	fmt.Println(parseHeader(response))
+}
+
+func parseHeader(header []byte) DNSHeader {
+	fields := make([]int, 0)
+	// Each of the 6 fields is a 2-byte integer.
+	for i := 0; i < 12; i += 2 {
+		val := binary.BigEndian.Uint16(header[i : i+2])
+		fields = append(fields, int(val))
+	}
+	return DNSHeader{
+		id:             fields[0],
+		flags:          fields[1],
+		numQuestions:   fields[2],
+		numAnswers:     fields[3],
+		numAuthorities: fields[4],
+		numAdditionals: fields[5],
+	}
+}
+
+func (h DNSHeader) String() string {
+	return fmt.Sprintf(
+		"DNSHeader{id: %d, flags: %d, numQuestions: %d, numAnswers: %d, numAuthorities: %d, numAdditionals: %d}",
+		h.id,
+		h.flags,
+		h.numQuestions,
+		h.numAnswers,
+		h.numAuthorities,
+		h.numAdditionals,
+	)
 }
 
 func main() {

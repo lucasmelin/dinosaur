@@ -82,3 +82,31 @@ func Test_buildQuery(t *testing.T) {
 		})
 	}
 }
+
+func Test_parseHeader(t *testing.T) {
+	tests := []struct {
+		name   string
+		header string
+		want   DNSHeader
+	}{
+		{
+			name:   "basic",
+			header: "`V\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00",
+			want: DNSHeader{
+				id:             24662,
+				flags:          33152,
+				numQuestions:   1,
+				numAnswers:     1,
+				numAuthorities: 0,
+				numAdditionals: 0,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := parseHeader([]byte(tt.header)); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("expected %q, got %q", tt.want, got)
+			}
+		})
+	}
+}
