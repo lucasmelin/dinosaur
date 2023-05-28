@@ -117,8 +117,8 @@ func sendQuery(domain string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%q", response)
 	fmt.Println(parseHeader(response))
+	fmt.Println(parseQuestion(response[12:]))
 }
 
 func parseHeader(header []byte) DNSHeader {
@@ -148,6 +148,53 @@ func (h DNSHeader) String() string {
 		h.numAuthorities,
 		h.numAdditionals,
 	)
+}
+
+func decodeName(reader []byte) (string, int) {
+	var parts = []string{}
+	index := 0
+	length := 0
+	for index < len(reader) {
+		// Read a single byte
+		length := reader[index]
+		if length == 0 {
+			return strings.Join(parts, "."), index
+		}
+		// Check if the first 2 bits are 1s
+		masked := length & 192
+		if masked != 0 {
+			decompressed, index := decodeCompressedName(int(length), reader)
+			parts = append(parts, decompressed)
+			// A compressed name is never followed by another label
+			return strings.Join(parts, "."), index
+		} else {
+			parts = append(parts, string(reader[index:index+int(length)+1]))
+			index = index + int(length) + 1
+		}
+	}
+	return strings.Join(parts, "."), length
+}
+
+func decodeCompressedName(offset int, reader []byte) (string, int) {
+	var pointerBytes []byte
+	pointerBytes = append(pointerBytes, byte(offset&63))
+	pointerBytes = append(pointerBytes, reader[offset+1])
+	pointer := (64 - (63 & offset)) + int(reader[offset+1])
+	result, i := decodeName(reader[pointer:])
+	return result, i
+}
+
+func parseQuestion(reader []byte) DNSQuestion {
+	name, read := decodeName(reader)
+	return DNSQuestion{
+		name:  name,
+		Type:  int(binary.BigEndian.Uint16(reader[read+1 : read+3])),
+		Class: int(binary.BigEndian.Uint16(reader[read+3 : read+5])),
+	}
+}
+
+func (q DNSQuestion) String() string {
+	return fmt.Sprintf("DNSQuestion{name: %s, Type: %d, Class: %d}", q.name, q.Type, q.Class)
 }
 
 func main() {
