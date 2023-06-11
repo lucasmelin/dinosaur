@@ -14,8 +14,11 @@ import (
 )
 
 const (
-	ClassIn = 1
-	TypeA   = 1
+	ClassIn        = 1
+	TypeA          = 1
+	TypeNS         = 2
+	TypeTxt        = 16
+	rootNameserver = ""
 )
 
 type DNSHeader struct {
@@ -28,7 +31,7 @@ type DNSHeader struct {
 }
 
 type DNSQuestion struct {
-	name  string
+	name  []byte
 	Type  uint16
 	Class uint16
 }
@@ -70,7 +73,7 @@ func (h *DNSHeader) toBytes() []byte {
 // In network packets, integers are always encoded in big endian.
 func (q *DNSQuestion) toBytes() []byte {
 	b := make([]byte, 0)
-	b = append(b, encodeDNSName(q.name)...)
+	b = append(b, encodeDNSName(string(q.name))...)
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.BigEndian, q.Type)
 	_ = binary.Write(buf, binary.BigEndian, q.Class)
@@ -93,17 +96,17 @@ func encodeDNSName(domainName string) []byte {
 }
 
 func buildQuery(queryID int, domainName string, recordType uint16) []byte {
-	RecursionDesired := 1 << 8
+	// RecursionDesired := 1 << 8
 	header := DNSHeader{
 		id:             uint16(queryID),
-		flags:          uint16(RecursionDesired),
+		flags:          uint16(0),
 		numQuestions:   1,
 		numAnswers:     0,
 		numAuthorities: 0,
 		numAdditionals: 0,
 	}
 	question := DNSQuestion{
-		name:  domainName,
+		name:  []byte(domainName),
 		Type:  recordType,
 		Class: ClassIn,
 	}
@@ -115,9 +118,9 @@ func randomID() int {
 	return r.Intn(65535)
 }
 
-func sendQuery(domain string) {
-	query := buildQuery(randomID(), domain, TypeA)
-	con, err := net.Dial("udp", "8.8.8.8:53")
+func sendQuery(ipAddress string, domain string, recordType uint16) DNSPacket {
+	query := buildQuery(randomID(), domain, recordType)
+	con, err := net.Dial("udp", fmt.Sprintf("%s:53", ipAddress))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -130,7 +133,7 @@ func sendQuery(domain string) {
 		log.Fatal(err)
 	}
 	_ = os.WriteFile("./response", response, 0644)
-	fmt.Println(parseDNSPacket(response))
+	return parseDNSPacket(response)
 }
 
 func parseHeader(header *bytes.Reader) DNSHeader {
@@ -164,14 +167,14 @@ func (h DNSHeader) String() string {
 	)
 }
 
-func decodeName(reader *bytes.Reader) string {
+func decodeName(reader *bytes.Reader) []byte {
 	var parts = []string{}
 	for length, _ := reader.ReadByte(); int(length) != 0; length, _ = reader.ReadByte() {
 
 		// Check if the first 2 bits are 1s
 		if length&0b1100_0000 == 0b1100_0000 {
 			decompressed := decodeCompressedName(length, reader)
-			parts = append(parts, decompressed)
+			parts = append(parts, string(decompressed))
 			// A compressed name is never followed by another label
 			break
 		} else {
@@ -181,10 +184,10 @@ func decodeName(reader *bytes.Reader) string {
 			parts = append(parts, string(rdbuf))
 		}
 	}
-	return strings.Join(parts, ".")
+	return []byte(strings.Join(parts, "."))
 }
 
-func decodeCompressedName(length byte, reader *bytes.Reader) string {
+func decodeCompressedName(length byte, reader *bytes.Reader) []byte {
 	// Read a single byte
 	b, _ := reader.ReadByte()
 	// Take the bottom 6 bits of the length byte plus the next byte
@@ -195,19 +198,19 @@ func decodeCompressedName(length byte, reader *bytes.Reader) string {
 
 	currentPosition, err := reader.Seek(0, io.SeekCurrent)
 	if err != nil {
-		return ""
+		return []byte("")
 	}
 
 	_, err = reader.Seek(int64(pointer), io.SeekStart)
 	if err != nil {
-		return ""
+		return []byte("")
 	}
 	result := decodeName(reader)
 
 	// Restore the current position in reader
 	_, err = reader.Seek(currentPosition, io.SeekStart)
 	if err != nil {
-		return ""
+		return []byte("")
 	}
 
 	return result
@@ -233,9 +236,8 @@ func (q DNSQuestion) String() string {
 
 func parseRecord(br *bytes.Reader) DNSRecord {
 	record := DNSRecord{}
-	name := decodeName(br)
 
-	record.name = []byte(name)
+	record.name = decodeName(br)
 
 	binary.Read(br, binary.BigEndian, &record.Type)
 	binary.Read(br, binary.BigEndian, &record.Class)
@@ -243,20 +245,33 @@ func parseRecord(br *bytes.Reader) DNSRecord {
 
 	var dataLength uint16
 	binary.Read(br, binary.BigEndian, &dataLength)
-	record.data = make([]byte, dataLength)
-	binary.Read(br, binary.BigEndian, &record.data)
+	data := make([]byte, dataLength)
+	binary.Read(br, binary.BigEndian, &data)
+
+	if record.Type == TypeNS {
+		record.data = decodeName(bytes.NewReader(data))
+	} else if record.Type == TypeA {
+		record.data = []byte(IPString(data))
+	} else {
+		record.data = data
+	}
 
 	return record
 }
 
 func (r DNSRecord) String() string {
+	data := r.data
+	if r.Type == TypeA {
+		data = []byte(IPString(r.data))
+	}
+
 	return fmt.Sprintf(`DNSRecord{
     name: %s,
     Type: %d,
     Class: %d,
     TTL: %d,
     Data: %s
-  }`, r.name, r.Type, r.Class, r.ttl, IPString(r.data))
+  }`, r.name, r.Type, r.Class, r.ttl, data)
 }
 
 func parseDNSPacket(data []byte) DNSPacket {
@@ -313,6 +328,52 @@ func IPString(data []byte) string {
 	return fmt.Sprintf("%v.%v.%v.%v", data[0], data[1], data[2], data[3])
 }
 
+func GetAnswer(packet DNSPacket) []byte {
+	for _, answer := range packet.answers {
+		if answer.Type == TypeA {
+			return answer.data
+		}
+	}
+	return nil
+}
+
+func GetNameserverIP(packet DNSPacket) []byte {
+	for _, additional := range packet.additionals {
+		if additional.Type == TypeA {
+			return additional.data
+		}
+	}
+	return nil
+}
+
+func GetNameserver(packet DNSPacket) string {
+	for _, authority := range packet.authorities {
+		if authority.Type == TypeNS {
+			return string(authority.data)
+		}
+	}
+	return ""
+}
+
+func resolve(domainName string, recordType uint16) []byte {
+	nameserver := "198.41.0.4"
+	for true {
+		fmt.Fprintf(os.Stdout, "Querying %s for %s\n", nameserver, domainName)
+		response := sendQuery(nameserver, domainName, recordType)
+		if ip := GetAnswer(response); ip != nil {
+			return ip
+		} else if nsIP := GetNameserverIP(response); nsIP != nil {
+			nameserver = string(nsIP)
+		} else if nsDomain := GetNameserver(response); nsDomain != "" {
+			nameserver = string(resolve(nsDomain, TypeA))
+		} else {
+			panic("something went wrong")
+		}
+	}
+	return nil
+}
+
 func main() {
-	sendQuery("www.recurse.com")
+	fmt.Println(IPString(resolve("twitter.com", TypeA)))
+	// fmt.Println(sendQuery("198.41.0.4", "www.recurse.com", TypeA))
 }
