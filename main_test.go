@@ -5,30 +5,32 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/lucasmelin/dinosaur/dns"
 )
 
 func TestDNSHeader_toBytes(t *testing.T) {
 	tests := []struct {
 		name     string
-		header   DNSHeader
+		header   dns.Header
 		expected string
 	}{
 		{
 			name: "basic",
-			header: DNSHeader{
-				id:             0x1314,
-				flags:          0,
-				numQuestions:   1,
-				numAnswers:     0,
-				numAuthorities: 0,
-				numAdditionals: 0,
+			header: dns.Header{
+				Id:             0x1314,
+				Flags:          0,
+				NumQuestions:   1,
+				NumAnswers:     0,
+				NumAuthorities: 0,
+				NumAdditionals: 0,
 			},
 			expected: "\"\\x13\\x14\\x00\\x00\\x00\\x01\\x00\\x00\\x00\\x00\\x00\\x00\"",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := fmt.Sprintf("%q", tt.header.toBytes())
+			got := fmt.Sprintf("%q", tt.header.ToBytes())
 			if got != tt.expected {
 				t.Errorf("expected %q but got %q", tt.expected, got)
 			}
@@ -50,7 +52,7 @@ func TestDNSName_toBytes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := fmt.Sprintf("%q", encodeDNSName(tt.dnsName))
+			got := fmt.Sprintf("%q", dns.EncodeDNSName(tt.dnsName))
 			if got != tt.expected {
 				t.Errorf("expected %q but got %q", tt.expected, got)
 			}
@@ -70,13 +72,13 @@ func Test_buildQuery(t *testing.T) {
 			name:       "basic",
 			id:         0x8298,
 			domainName: "example.com",
-			recordType: TypeA,
+			recordType: dns.TypeA,
 			want:       "\x82\x98\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\aexample\x03com\x00\x00\x01\x00\x01",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := buildQuery(tt.id, tt.domainName, tt.recordType)
+			got := dns.BuildQuery(tt.id, tt.domainName, tt.recordType)
 			if !reflect.DeepEqual(got, []byte(tt.want)) {
 				t.Errorf("expected %q but got %q", tt.want, got)
 			}
@@ -88,24 +90,24 @@ func Test_parseHeader(t *testing.T) {
 	tests := []struct {
 		name   string
 		header *bytes.Reader
-		want   DNSHeader
+		want   dns.Header
 	}{
 		{
 			name:   "basic",
 			header: bytes.NewReader([]byte("`V\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00")),
-			want: DNSHeader{
-				id:             24662,
-				flags:          33152,
-				numQuestions:   1,
-				numAnswers:     1,
-				numAuthorities: 0,
-				numAdditionals: 0,
+			want: dns.Header{
+				Id:             24662,
+				Flags:          33152,
+				NumQuestions:   1,
+				NumAnswers:     1,
+				NumAuthorities: 0,
+				NumAdditionals: 0,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := parseHeader(tt.header); !reflect.DeepEqual(got, tt.want) {
+			if got := dns.ParseHeader(tt.header); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("expected %q, got %q", tt.want, got)
 			}
 		})
