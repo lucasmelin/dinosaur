@@ -14,7 +14,8 @@ const (
 	RecursionOff     = 0
 )
 
-func BuildQuery(queryID int, domainName string, recordType uint16) []byte {
+func BuildQuery(queryID int, domainName string, recordType string) []byte {
+	recType := RecordTypes[recordType]
 	header := Header{
 		Id:             uint16(queryID),
 		Flags:          RecursionOff,
@@ -25,7 +26,7 @@ func BuildQuery(queryID int, domainName string, recordType uint16) []byte {
 	}
 	question := Question{
 		Name:  []byte(domainName),
-		Type:  recordType,
+		Type:  recType.Value,
 		Class: ClassIn,
 	}
 	return append(header.ToBytes(), question.ToBytes()...)
@@ -36,7 +37,7 @@ func RandomID() int {
 	return r.Intn(65535)
 }
 
-func SendQuery(ipAddress string, domain string, recordType uint16) Packet {
+func SendQuery(ipAddress string, domain string, recordType string) Packet {
 	query := BuildQuery(RandomID(), domain, recordType)
 	con, err := net.Dial("udp", fmt.Sprintf("%s:53", ipAddress))
 	if err != nil {
@@ -54,7 +55,7 @@ func SendQuery(ipAddress string, domain string, recordType uint16) Packet {
 	return ParseDNSPacket(response)
 }
 
-func Resolve(domainName string, recordType uint16) []byte {
+func Resolve(domainName string, recordType string) []byte {
 	nameserver := "198.41.0.4"
 	for true {
 		fmt.Fprintf(os.Stdout, "Querying %s for %s\n", nameserver, domainName)
@@ -64,7 +65,7 @@ func Resolve(domainName string, recordType uint16) []byte {
 		} else if nsIP := GetNameserverIP(response); nsIP != nil {
 			nameserver = string(nsIP)
 		} else if nsDomain := GetNameserver(response); nsDomain != "" {
-			nameserver = string(Resolve(nsDomain, TypeA))
+			nameserver = string(Resolve(nsDomain, "A"))
 		} else {
 			panic("something went wrong")
 		}

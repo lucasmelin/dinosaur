@@ -8,30 +8,116 @@ import (
 
 const (
 	ClassIn        = 1
-	TypeA          = 1
-	TypeNS         = 2
-	TypeTxt        = 16
 	rootNameserver = ""
+)
+
+const (
+	TypeA = iota + 1
+	TypeNS
+	TypeMD
+	TypeMF
+	TypeCNAME
+	TypeSOA
+	TypeMB
+	TypeMG
+	TypeMR
+	TypeNULL
+	TypeWKS
+	TypePTR
+	TypeHINFO
+	TypeMINFO
+	TypeMX
+	TypeTXT
 )
 
 type RecordType struct {
 	Name    string
-	Value   int
+	Value   uint16
 	Meaning string
 }
 
 // RecordTypes represents all possible resource record TYPE field values.
 // See: https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.2
-var RecordTypes = []RecordType{
-	{
+var RecordTypes = map[string]RecordType{
+	"A": {
 		Name:    "A",
-		Value:   1,
+		Value:   TypeA,
 		Meaning: "a host address",
 	},
-	{
+	"NS": {
 		Name:    "NS",
-		Value:   2,
+		Value:   TypeNS,
 		Meaning: "an authoritative name server",
+	},
+	"MD": {
+		Name:    "MD",
+		Value:   TypeMD,
+		Meaning: "a mail destination (Obsolete - use MX)",
+	},
+	"MF": {
+		Name:    "MF",
+		Value:   TypeMF,
+		Meaning: "a mail forwarder (Obsolete - use MX)",
+	},
+	"CNAME": {
+		Name:    "CNAME",
+		Value:   TypeCNAME,
+		Meaning: "the canonical name for an alias",
+	},
+	"SOA": {
+		Name:    "SOA",
+		Value:   TypeSOA,
+		Meaning: "marks the start of a zone of authority",
+	},
+	"MB": {
+		Name:    "MB",
+		Value:   TypeMB,
+		Meaning: "a mailbox domain name (EXPERIMENTAL)",
+	},
+	"MG": {
+		Name:    "MG",
+		Value:   TypeMG,
+		Meaning: "a mail group member (EXPERIMENTAL)",
+	},
+	"MR": {
+		Name:    "MR",
+		Value:   TypeMR,
+		Meaning: "a mail rename domain name (EXPERIMENTAL)",
+	},
+	"NULL": {
+		Name:    "NULL",
+		Value:   TypeNULL,
+		Meaning: "a null RR (EXPERIMENTAL)",
+	},
+	"WKS": {
+		Name:    "WKS",
+		Value:   TypeWKS,
+		Meaning: "a well known service description",
+	},
+	"PTR": {
+		Name:    "PTR",
+		Value:   TypePTR,
+		Meaning: "a domain name pointer",
+	},
+	"HINFO": {
+		Name:    "HINFO",
+		Value:   TypeHINFO,
+		Meaning: "host information",
+	},
+	"MINFO": {
+		Name:    "MINFO",
+		Value:   TypeMINFO,
+		Meaning: "mailbox or mail list information",
+	},
+	"MX": {
+		Name:    "MX",
+		Value:   TypeMX,
+		Meaning: "mail exchange",
+	},
+	"TXT": {
+		Name:    "TXT",
+		Value:   TypeTXT,
+		Meaning: "text strings",
 	},
 }
 
