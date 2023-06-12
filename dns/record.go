@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	ClassIn        = 1
-	rootNameserver = ""
+	ClassIn = 1
+	// IP Address for a.root-servers.net
+	rootNameserver = "198.41.0.4"
 )
 
 const (
@@ -121,6 +122,7 @@ var RecordTypes = map[string]RecordType{
 	},
 }
 
+// Record represents a DNS resource record.
 type Record struct {
 	// Name represents the domain Name.
 	Name []byte

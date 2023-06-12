@@ -8,15 +8,23 @@ import (
 	"strings"
 )
 
-type Packet struct {
-	header      Header
-	questions   []Question
-	answers     []Record
+// Message represents a full DNS message.
+// See: https://datatracker.ietf.org/doc/html/rfc1035#section-4
+type Message struct {
+	// header includes fields that specify which of the remaining fields are present,whether a message is a query
+	// or a response, a standard query or some other opcode, etc.
+	header    Header
+	questions []Question
+	// answers contains records that answer the question.
+	answers []Record
+	// authorities contains records that point towards an authoritative name server.
 	authorities []Record
+	// additionals contains records that relate to the query, but are not strictly answers to the question.
 	additionals []Record
 }
 
-func ParseDNSPacket(data []byte) Packet {
+// ParseMessage parses a given byte array into a Message.
+func ParseMessage(data []byte) Message {
 	reader := bytes.NewReader(data)
 	header := ParseHeader(reader)
 
@@ -37,7 +45,7 @@ func ParseDNSPacket(data []byte) Packet {
 	for i = 0; i < header.NumAdditionals; i++ {
 		additionals = append(additionals, ParseRecord(reader))
 	}
-	return Packet{
+	return Message{
 		header:      header,
 		questions:   questions,
 		answers:     answers,
@@ -46,15 +54,17 @@ func ParseDNSPacket(data []byte) Packet {
 	}
 }
 
+// DecodeName returns the first domain name found in the provided reader.
 func DecodeName(reader *bytes.Reader) []byte {
 	var parts = []string{}
 	for length, _ := reader.ReadByte(); int(length) != 0; length, _ = reader.ReadByte() {
 
-		// Check if the first 2 bits are 1s
+		// Check if the first 2 bits are 1s.
+		// Any length starting with 11 means that the name is compressed.
 		if length&0b1100_0000 == 0b1100_0000 {
 			decompressed := DecodeCompressedName(length, reader)
 			parts = append(parts, string(decompressed))
-			// A compressed Name is never followed by another label
+			// A compressed name is never followed by another label
 			break
 		} else {
 			// Make a new byte array to read
@@ -66,6 +76,8 @@ func DecodeName(reader *bytes.Reader) []byte {
 	return []byte(strings.Join(parts, "."))
 }
 
+// DecodeCompressedName extracts a domain name from a compressed message response.
+// See: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
 func DecodeCompressedName(length byte, reader *bytes.Reader) []byte {
 	// Read a single byte
 	b, _ := reader.ReadByte()
@@ -95,9 +107,10 @@ func DecodeCompressedName(length byte, reader *bytes.Reader) []byte {
 	return result
 }
 
-func (p Packet) String() string {
+// String formats a Message for printing.
+func (p Message) String() string {
 	return fmt.Sprintf(
-		`Packet{
+		`Message{
   header: %s,
   questions: %+v,
   answers: %+v,
@@ -112,8 +125,9 @@ func (p Packet) String() string {
 	)
 }
 
-func GetAnswer(packet Packet) []byte {
-	for _, answer := range packet.answers {
+// GetAnswer returns the Data field from the first A record answer field in the Message.
+func GetAnswer(message Message) []byte {
+	for _, answer := range message.answers {
 		if answer.Type == TypeA {
 			return answer.Data
 		}
@@ -121,8 +135,9 @@ func GetAnswer(packet Packet) []byte {
 	return nil
 }
 
-func GetNameserverIP(packet Packet) []byte {
-	for _, additional := range packet.additionals {
+// GetNameserverIP returns the Data field from the first A record additional field in the Message.
+func GetNameserverIP(message Message) []byte {
+	for _, additional := range message.additionals {
 		if additional.Type == TypeA {
 			return additional.Data
 		}
@@ -130,8 +145,9 @@ func GetNameserverIP(packet Packet) []byte {
 	return nil
 }
 
-func GetNameserver(packet Packet) string {
-	for _, authority := range packet.authorities {
+// GetNameserver returns the Data field from the first NS record authority field in the Message.
+func GetNameserver(message Message) string {
+	for _, authority := range message.authorities {
 		if authority.Type == TypeNS {
 			return string(authority.Data)
 		}

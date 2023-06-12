@@ -8,8 +8,11 @@ import (
 )
 
 type Question struct {
-	Name  []byte
-	Type  uint16
+	// Name represents the query domain name.
+	Name []byte
+	// Type represents the query type.
+	Type uint16
+	// Class represents the query class.
 	Class uint16
 }
 
@@ -24,10 +27,10 @@ func ParseQuestion(reader *bytes.Reader) Question {
 }
 
 // ToBytes encodes a Question as bytes.
-// In network packets, integers are always encoded in big endian.
+// In network messages, integers are always encoded in big endian.
 func (q *Question) ToBytes() []byte {
 	b := make([]byte, 0)
-	b = append(b, EncodeDNSName(string(q.Name))...)
+	b = append(b, EncodeName(string(q.Name))...)
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.BigEndian, q.Type)
 	_ = binary.Write(buf, binary.BigEndian, q.Class)
@@ -35,7 +38,7 @@ func (q *Question) ToBytes() []byte {
 	return b
 }
 
-func EncodeDNSName(domainName string) []byte {
+func EncodeName(domainName string) []byte {
 	parts := strings.Split(domainName, ".")
 	buf := new(bytes.Buffer)
 	for _, part := range parts {

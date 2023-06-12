@@ -17,7 +17,7 @@ const (
 func BuildQuery(queryID int, domainName string, recordType string) []byte {
 	recType := RecordTypes[recordType]
 	header := Header{
-		Id:             uint16(queryID),
+		ID:             uint16(queryID),
 		Flags:          RecursionOff,
 		NumQuestions:   1,
 		NumAnswers:     0,
@@ -37,7 +37,7 @@ func RandomID() int {
 	return r.Intn(65535)
 }
 
-func SendQuery(ipAddress string, domain string, recordType string) Packet {
+func SendQuery(ipAddress string, domain string, recordType string) Message {
 	query := BuildQuery(RandomID(), domain, recordType)
 	con, err := net.Dial("udp", fmt.Sprintf("%s:53", ipAddress))
 	if err != nil {
@@ -52,13 +52,13 @@ func SendQuery(ipAddress string, domain string, recordType string) Packet {
 		log.Fatal(err)
 	}
 	_ = os.WriteFile("./response", response, 0644)
-	return ParseDNSPacket(response)
+	return ParseMessage(response)
 }
 
 func Resolve(domainName string, recordType string) []byte {
-	nameserver := "198.41.0.4"
+	nameserver := rootNameserver
 	for true {
-		fmt.Fprintf(os.Stdout, "Querying %s for %s\n", nameserver, domainName)
+		fmt.Printf("Querying %s for %s\n", nameserver, domainName)
 		response := SendQuery(nameserver, domainName, recordType)
 		if ip := GetAnswer(response); ip != nil {
 			return ip
