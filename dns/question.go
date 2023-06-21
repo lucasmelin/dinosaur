@@ -16,6 +16,7 @@ type Question struct {
 	Class uint16
 }
 
+// ParseQuestion parses a given bytes reader into a Question.
 func ParseQuestion(reader *bytes.Reader) Question {
 	q := Question{}
 	q.Name = DecodeName(reader)
@@ -38,6 +39,9 @@ func (q *Question) ToBytes() []byte {
 	return b
 }
 
+// EncodeName encodes a domain name by splitting the domain
+// name into parts, with each part prepended with its length.
+// This encoded name is then returned as a byte array.
 func EncodeName(domainName string) []byte {
 	parts := strings.Split(domainName, ".")
 	buf := new(bytes.Buffer)
