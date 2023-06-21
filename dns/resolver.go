@@ -65,6 +65,8 @@ func Resolve(domainName string, recordType string) []byte {
 		response := SendQuery(nameserver, domainName, recordType)
 		if ip := GetAnswer(response); ip != nil {
 			return ip
+		} else if alias := GetAlias(response); alias != "" {
+			return Resolve(alias, "A")
 		} else if nsIP := GetNameserverIP(response); nsIP != nil {
 			nameserver = string(nsIP)
 		} else if nsDomain := GetNameserver(response); nsDomain != "" {

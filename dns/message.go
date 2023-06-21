@@ -135,6 +135,16 @@ func GetAnswer(message Message) []byte {
 	return nil
 }
 
+// GetAlias returns the Data field from the first CNAME record answer field in the Message.
+func GetAlias(message Message) string {
+	for _, answer := range message.answers {
+		if answer.Type == TypeCNAME {
+			return string(answer.Data)
+		}
+	}
+	return ""
+}
+
 // GetNameserverIP returns the Data field from the first A record additional field in the Message.
 func GetNameserverIP(message Message) []byte {
 	for _, additional := range message.additionals {

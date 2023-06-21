@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 )
 
 const (
@@ -149,6 +150,8 @@ func ParseRecord(reader *bytes.Reader) Record {
 	var dataLength uint16
 	binary.Read(reader, binary.BigEndian, &dataLength)
 	data := make([]byte, dataLength)
+	// Save the offset before reading the data field.
+	beforeData, _ := reader.Seek(0, io.SeekCurrent)
 	binary.Read(reader, binary.BigEndian, &data)
 
 	switch record.Type {
@@ -156,6 +159,12 @@ func ParseRecord(reader *bytes.Reader) Record {
 		record.Data = DecodeName(bytes.NewReader(data))
 	case TypeA:
 		record.Data = []byte(IPString(data))
+	case TypeCNAME:
+		// Seek back in the reader to before the name, so that
+		// DecodeName can decompress the name by referring to bytes
+		// anywhere in the response.
+		reader.Seek(beforeData, io.SeekStart)
+		record.Data = DecodeName(reader)
 	default:
 		record.Data = data
 	}
