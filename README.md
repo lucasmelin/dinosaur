@@ -1,3 +1,10 @@
-# Dinosaur
+<h1 align="center"> dinosaur </h1>
 
-Toy DNS resolver, inspired by https://implement-dns.wizardzines.com/index.html
+<p align="center">
+A toy DNS resolver, inspired by <a href="https://implement-dns.wizardzines.com/index.html">Implement DNS in a weekend</a> by Julia Evans.
+<br/>
+<br/>
+<br/>
+<img src="assets/logo.png" alt="dinosaur logo">
+</p>
+
