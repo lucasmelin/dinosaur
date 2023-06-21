@@ -123,6 +123,7 @@ var RecordTypes = map[string]RecordType{
 }
 
 // Record represents a DNS resource record.
+// See: https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.1
 type Record struct {
 	// Name represents the domain Name.
 	Name []byte
@@ -135,31 +136,34 @@ type Record struct {
 	Data []byte
 }
 
-func ParseRecord(br *bytes.Reader) Record {
+// ParseRecord parses a given bytes reader into a record.
+func ParseRecord(reader *bytes.Reader) Record {
 	record := Record{}
 
-	record.Name = DecodeName(br)
+	record.Name = DecodeName(reader)
 
-	binary.Read(br, binary.BigEndian, &record.Type)
-	binary.Read(br, binary.BigEndian, &record.Class)
-	binary.Read(br, binary.BigEndian, &record.TTL)
+	binary.Read(reader, binary.BigEndian, &record.Type)
+	binary.Read(reader, binary.BigEndian, &record.Class)
+	binary.Read(reader, binary.BigEndian, &record.TTL)
 
 	var dataLength uint16
-	binary.Read(br, binary.BigEndian, &dataLength)
+	binary.Read(reader, binary.BigEndian, &dataLength)
 	data := make([]byte, dataLength)
-	binary.Read(br, binary.BigEndian, &data)
+	binary.Read(reader, binary.BigEndian, &data)
 
-	if record.Type == TypeNS {
+	switch record.Type {
+	case TypeNS:
 		record.Data = DecodeName(bytes.NewReader(data))
-	} else if record.Type == TypeA {
+	case TypeA:
 		record.Data = []byte(IPString(data))
-	} else {
+	default:
 		record.Data = data
 	}
 
 	return record
 }
 
+// IPString converts a byte array into a dotted IP format.
 func IPString(data []byte) string {
 	if len(data) < 4 {
 		return "?.?.?.?"

@@ -32,11 +32,13 @@ func BuildQuery(queryID int, domainName string, recordType string) []byte {
 	return append(header.ToBytes(), question.ToBytes()...)
 }
 
+// RandomID returns a random 16-bit integer.
 func RandomID() int {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	return r.Intn(65535)
 }
 
+// SendQuery sends a query to a given DNS resolver, and returns the message from the resolver.
 func SendQuery(ipAddress string, domain string, recordType string) Message {
 	query := BuildQuery(RandomID(), domain, recordType)
 	con, err := net.Dial("udp", fmt.Sprintf("%s:53", ipAddress))
@@ -55,6 +57,7 @@ func SendQuery(ipAddress string, domain string, recordType string) Message {
 	return ParseMessage(response)
 }
 
+// Resolve recursively queries nameservers to find the IP address for a given domain name.
 func Resolve(domainName string, recordType string) []byte {
 	nameserver := rootNameserver
 	for true {
