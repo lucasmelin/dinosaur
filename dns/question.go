@@ -41,8 +41,11 @@ func (q *Question) ToBytes() []byte {
 
 // EncodeName encodes a domain name by splitting the domain
 // name into parts (labels), with each part prepended with its length.
-// This encoded name is then returned as a byte array.
-// See: https://datatracker.ietf.org/doc/html/rfc1035#section-3.3
+// The encoded name is then returned as a byte array.
+//
+// This encoding format is defined in [RFC 1035 section 3.3].
+//
+// [RFC 1035 section 3.3]: https://datatracker.ietf.org/doc/html/rfc1035#section-3.3
 func EncodeName(domainName string) []byte {
 	parts := strings.Split(domainName, ".")
 	buf := new(bytes.Buffer)

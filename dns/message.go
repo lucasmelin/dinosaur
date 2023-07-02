@@ -8,8 +8,9 @@ import (
 	"strings"
 )
 
-// Message represents a full DNS message.
-// See: https://datatracker.ietf.org/doc/html/rfc1035#section-4
+// Message represents a full DNS message as defined in [RFC 1035 section 4].
+//
+// [RFC 1035 section 4]: https://datatracker.ietf.org/doc/html/rfc1035#section-4
 type Message struct {
 	// header includes fields that specify which of the remaining fields are present,whether a message is a query
 	// or a response, a standard query or some other opcode, etc.
@@ -76,8 +77,10 @@ func DecodeName(reader *bytes.Reader) []byte {
 	return []byte(strings.Join(parts, "."))
 }
 
-// DecodeCompressedName extracts a domain name from a compressed message response.
-// See: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
+// DecodeCompressedName extracts a domain name from a compressed message response as defined in
+// [RFC 1035 section 4.1.4].
+//
+// [RFC 1035 section 4.1.4]: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
 func DecodeCompressedName(length byte, reader *bytes.Reader) []byte {
 	// Read a single byte
 	b, _ := reader.ReadByte()

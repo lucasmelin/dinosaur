@@ -38,8 +38,10 @@ type RecordType struct {
 	Meaning string
 }
 
-// RecordTypes represents all possible resource record TYPE field values.
-// See: https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.2
+// RecordTypes represents all possible resource record type field values
+// as defined in [RFC 1035 section 3.2.2].
+//
+// [RFC 1035 section 3.2.2]: https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.2
 var RecordTypes = map[string]RecordType{
 	"A": {
 		Name:    "A",
@@ -123,8 +125,9 @@ var RecordTypes = map[string]RecordType{
 	},
 }
 
-// Record represents a DNS resource record.
-// See: https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.1
+// Record represents a DNS resource record as defined in [RFC 1035 section 3.2.1].
+//
+// [RFC 1035 section 3.2.1]: https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.1
 type Record struct {
 	// Name represents the domain Name.
 	Name []byte

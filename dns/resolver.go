@@ -5,8 +5,9 @@ import (
 	"log"
 	"math/rand"
 	"net"
-	"os"
 	"time"
+
+	"github.com/lucasmelin/dinosaur/dino"
 )
 
 const (
@@ -40,20 +41,20 @@ func RandomID() int {
 
 // SendQuery sends a query to a given DNS resolver, and returns the message from the resolver.
 func SendQuery(ipAddress string, domain string, recordType string) Message {
-	query := BuildQuery(RandomID(), domain, recordType)
 	con, err := net.Dial("udp", fmt.Sprintf("%s:53", ipAddress))
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer con.Close()
 
+	query := BuildQuery(RandomID(), domain, recordType)
 	_, _ = con.Write(query)
 	response := make([]byte, 1024)
 	_, err = con.Read(response)
 	if err != nil {
 		log.Fatal(err)
 	}
-	_ = os.WriteFile("./response", response, 0644)
+	// _ = os.WriteFile("./response", response, 0644)
 	return ParseMessage(response)
 }
 
@@ -61,15 +62,20 @@ func SendQuery(ipAddress string, domain string, recordType string) Message {
 func Resolve(domainName string, recordType string) []byte {
 	nameserver := rootNameserver
 	for true {
-		fmt.Printf("Querying %s for %s\n", nameserver, domainName)
+		dino.NewDino().SayRight(fmt.Sprintf("Hey %s what's the address for %s?", nameserver, domainName))
 		response := SendQuery(nameserver, domainName, recordType)
 		if ip := GetAnswer(response); ip != nil {
+			dino.NewServer(nameserver).SayLeft(fmt.Sprintf("The IP address is %s", ip))
 			return ip
 		} else if alias := GetAlias(response); alias != "" {
+			dino.NewServer(nameserver).SayLeft(fmt.Sprintf("That's an alias for %s", alias))
 			return Resolve(alias, "A")
 		} else if nsIP := GetNameserverIP(response); nsIP != nil {
+			dino.NewServer(nameserver).SayLeft(fmt.Sprintf("I don't know, you should ask %s", nsIP))
 			nameserver = string(nsIP)
 		} else if nsDomain := GetNameserver(response); nsDomain != "" {
+			dino.NewServer(nameserver).SayLeft(fmt.Sprintf("I don't know, you should ask %s", nsDomain))
+			dino.NewDino().SayLeft(fmt.Sprintf("I wonder how I can reach %s", nsDomain))
 			nameserver = string(Resolve(nsDomain, "A"))
 		} else {
 			panic("something went wrong")

@@ -6,8 +6,9 @@ import (
 	"fmt"
 )
 
-// Header implements a DNS message header.
-// See: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.1
+// Header implements a DNS message header as defined in [RFC 1035 section 4.1.1].
+//
+// [RFC 1035 section 4.1.1]: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.1
 type Header struct {
 	// ID is a 16 bit identifier assigned by the program that generated the query.
 	// This identifier is copied to the corresponding reply,
