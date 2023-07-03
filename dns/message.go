@@ -57,7 +57,7 @@ func ParseMessage(data []byte) Message {
 
 // DecodeName returns the first domain name found in the provided reader.
 func DecodeName(reader *bytes.Reader) []byte {
-	var parts = []string{}
+	var parts []string
 	for length, _ := reader.ReadByte(); int(length) != 0; length, _ = reader.ReadByte() {
 
 		// Check if the first 2 bits are 1s.

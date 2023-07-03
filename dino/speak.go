@@ -9,7 +9,6 @@ type Actor struct {
 	left  string
 	right string
 }
-type Server struct{}
 
 func NewDino() Actor {
 	return Actor{
