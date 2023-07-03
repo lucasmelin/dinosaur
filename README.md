@@ -10,11 +10,7 @@ A toy DNS resolver, inspired by <a href="https://implement-dns.wizardzines.com/i
 
 ## Demo
 
-<br>
-<video src="assets/demo.mp4" controls="controls" style="max-width: 730px;">
-</video>
-<br>
-<br>
+https://github.com/lucasmelin/dinosaur/assets/205707/89f3b49c-0230-483a-940e-1f12adacb798
 
 ## Development
 
