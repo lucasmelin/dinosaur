@@ -8,9 +8,13 @@ A toy DNS resolver, inspired by <a href="https://implement-dns.wizardzines.com/i
 <img src="assets/logo.png" alt="dinosaur logo">
 </p>
 
-## Usage
+## Demo
 
-![Dinosaur demo video](assets/demo.mp4)
+<br>
+<video src="assets/demo.mp4" controls="controls" style="max-width: 730px;">
+</video>
+<br>
+<br>
 
 ## Development
 
