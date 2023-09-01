@@ -62,7 +62,7 @@ func SendQuery(ipAddress string, domain string, recordType string) Message {
 // It also prints ascii art of each resolution step.
 func AsciiResolve(domainName string, recordType string, impatient bool) []byte {
 	nameserver := rootNameserver
-	for true {
+	for {
 		dino.NewDino().SayRight(fmt.Sprintf("Hey %s what's the address for %s?", nameserver, domainName))
 		if !impatient {
 			waitForKeypress()
@@ -111,7 +111,7 @@ func waitForKeypress() {
 // Resolve recursively queries nameservers to find the IP address for a given domain name.
 func Resolve(domainName string, recordType string) []byte {
 	nameserver := rootNameserver
-	for true {
+	for {
 		response := SendQuery(nameserver, domainName, recordType)
 		if ip := GetAnswer(response); ip != nil {
 			return ip
