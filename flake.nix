@@ -16,7 +16,7 @@
     gitignore,
     gomod2nix,
   }: let
-    goVersion = 20; # Change this to update the whole stack
+    goVersion = 26; # Change this to update the whole stack
     overlays = [
       # Overlay our custom Go version
       (final: prev: {go = prev."go_1_${toString goVersion}";})
@@ -69,7 +69,7 @@
 
           # https://github.com/nix-community/gomod2nix
           # This allows us to run gomod2nix from the dev shell
-          gomod2nix.packages.${system}.default
+          gomod2nix.packages.${stdenv.hostPlatform.system}.default
         ];
         shellHook = ''
           ${pkgs.go}/bin/go version
